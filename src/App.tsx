@@ -103,7 +103,7 @@ export default function App() {
       {step !== "REFINEMENT" && (
         <header className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-50">
           <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
-            <span>유이야 자소서 쉽게 쓰게해줄게</span>
+            <span>쥬쥬의 자소서 써주기</span>
           </div>
         </header>
       )}
