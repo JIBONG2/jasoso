@@ -22,10 +22,13 @@ async function startServer() {
   // API Routes
   app.post("/api/generate", async (req, res) => {
     try {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "GEMINI_API_KEY is missing. Please set it in the settings." });
+      }
       const { prompt } = req.body;
       const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+        model: "gemini-1.5-flash",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
       res.json({ text: response.text });
     } catch (error) {
@@ -36,10 +39,13 @@ async function startServer() {
 
   app.post("/api/refine", async (req, res) => {
     try {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "GEMINI_API_KEY is missing. Please set it in the settings." });
+      }
       const { history, currentSOP, feedback, systemInstruction } = req.body;
       
       const response = await genAI.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: [
           ...history.map((msg: any) => ({
             role: msg.role,
