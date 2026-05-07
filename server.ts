@@ -17,30 +17,31 @@ async function startServer() {
   app.use(express.json());
 
   // Gemini Setup
-  const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+  const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+  const genAI = new GoogleGenAI({ apiKey });
 
   // API Routes
   app.post("/api/generate", async (req, res) => {
     try {
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is missing. Please set it in the settings." });
+      if (!apiKey) {
+        return res.status(500).json({ error: "GEMINI_API_KEY is missing. Please set it in the environment variables." });
       }
       const { prompt } = req.body;
       const response = await genAI.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
       res.json({ text: response.text });
-    } catch (error) {
-      console.error("Gemini API Error:", error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to generate content" });
+    } catch (error: any) {
+      console.error("Gemini API Error Detail:", error?.response?.data || error);
+      res.status(500).json({ error: error?.message || "Failed to generate content" });
     }
   });
 
   app.post("/api/refine", async (req, res) => {
     try {
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is missing. Please set it in the settings." });
+      if (!apiKey) {
+        return res.status(500).json({ error: "GEMINI_API_KEY is missing. Please set it in the environment variables." });
       }
       const { history, currentSOP, feedback, systemInstruction } = req.body;
       
@@ -61,9 +62,9 @@ async function startServer() {
         }
       });
       res.json({ text: response.text });
-    } catch (error) {
-      console.error("Gemini Refine Error:", error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to refine content" });
+    } catch (error: any) {
+      console.error("Gemini Refine Error Detail:", error?.response?.data || error);
+      res.status(500).json({ error: error?.message || "Failed to refine content" });
     }
   });
 
