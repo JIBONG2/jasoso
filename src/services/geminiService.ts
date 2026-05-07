@@ -5,14 +5,7 @@ export interface ChatMessage {
   text: string;
 }
 
-const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not defined. Please check your environment variables or settings.");
-  }
-  return new GoogleGenAI({ apiKey });
-};
-
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 const MODEL_NAME = "gemini-3-flash-preview";
 
 export const generateInitialSOP = async (type: string, info: { 
@@ -26,7 +19,6 @@ export const generateInitialSOP = async (type: string, info: {
   experience: string; 
   certificates: string;
 }) => {
-  const ai = getAI();
   const prompt = `당신은 전문 취업 컨설턴트입니다. 다음 정보를 바탕으로 '${info.style}'를 적용하여 매력적인 '${type}' 자기소개서를 작성해주세요.
   
   [지원자 정보]
@@ -63,7 +55,6 @@ export const generateInitialSOP = async (type: string, info: {
 };
 
 export const refineSOP = async (history: ChatMessage[], currentSOP: string, feedback: string) => {
-  const ai = getAI();
   const systemInstruction = `당신은 자기소개서 첨삭 전문가 'AI 쥬쥬'입니다. 사용자의 피드백을 반영하여 현재 자기소개서를 수정해주세요. 
       사용자가 특정 부분의 수정을 요청하면 그 부분을 중점적으로 고치되, 전체적인 흐름이 자연스러워야 합니다.
       답변에는 항상 '수정된 자기소개서 전체 내용'을 Markdown 형식으로 포함해야 합니다.
