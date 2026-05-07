@@ -27,13 +27,13 @@ async function startServer() {
       }
       const { prompt } = req.body;
       const response = await genAI.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        model: "gemini-3-flash-preview",
+        contents: prompt,
       });
       res.json({ text: response.text });
     } catch (error) {
       console.error("Gemini API Error:", error);
-      res.status(500).json({ error: "Failed to generate content" });
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to generate content" });
     }
   });
 
@@ -45,10 +45,10 @@ async function startServer() {
       const { history, currentSOP, feedback, systemInstruction } = req.body;
       
       const response = await genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-3-flash-preview",
         contents: [
           ...history.map((msg: any) => ({
-            role: msg.role,
+            role: msg.role === "model" ? "model" : "user",
             parts: [{ text: msg.text }]
           })),
           {
@@ -63,7 +63,7 @@ async function startServer() {
       res.json({ text: response.text });
     } catch (error) {
       console.error("Gemini Refine Error:", error);
-      res.status(500).json({ error: "Failed to refine content" });
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to refine content" });
     }
   });
 
