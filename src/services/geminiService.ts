@@ -1,7 +1,19 @@
+import { GoogleGenAI } from "@google/genai";
+
 export interface ChatMessage {
   role: "user" | "model";
   text: string;
 }
+
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not defined. Please check your environment variables or settings.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
+const MODEL_NAME = "gemini-3-flash-preview";
 
 export const generateInitialSOP = async (type: string, info: { 
   name: string;
@@ -14,6 +26,7 @@ export const generateInitialSOP = async (type: string, info: {
   experience: string; 
   certificates: string;
 }) => {
+  const ai = getAI();
   const prompt = `당신은 전문 취업 컨설턴트입니다. 다음 정보를 바탕으로 '${info.style}'를 적용하여 매력적인 '${type}' 자기소개서를 작성해주세요.
   
   [지원자 정보]
@@ -41,30 +54,37 @@ export const generateInitialSOP = async (type: string, info: {
   8. 구체적인 수치나 에피소드가 있다면 강조하여 진정성을 높여주세요.
   9. 문체는 정중하고 전문적인 어투(~합니다)를 기본으로 합니다.`;
 
-  const response = await fetch("/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
   });
 
-  if (!response.ok) throw new Error("Failed to generate SOP");
-  const data = await response.json();
-  return data.text;
+  return response.text;
 };
 
 export const refineSOP = async (history: ChatMessage[], currentSOP: string, feedback: string) => {
+  const ai = getAI();
   const systemInstruction = `당신은 자기소개서 첨삭 전문가 'AI 쥬쥬'입니다. 사용자의 피드백을 반영하여 현재 자기소개서를 수정해주세요. 
       사용자가 특정 부분의 수정을 요청하면 그 부분을 중점적으로 고치되, 전체적인 흐름이 자연스러워야 합니다.
       답변에는 항상 '수정된 자기소개서 전체 내용'을 Markdown 형식으로 포함해야 합니다.
       제목은 # [자기소개서] 형식을 사용하고, 각 항목의 소제목은 ## 1. [제목] 형식을 사용하여 실제 문서처럼 가독성 있게 작성해주세요.`;
 
-  const response = await fetch("/api/refine", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ history, currentSOP, feedback, systemInstruction }),
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: [
+      ...history.map((msg: any) => ({
+        role: msg.role === "model" ? "model" : "user",
+        parts: [{ text: msg.text }]
+      })),
+      {
+        role: "user",
+        parts: [{ text: `현재 자소서:\n${currentSOP}\n\n피드백: ${feedback}` }]
+      }
+    ],
+    config: {
+      systemInstruction
+    }
   });
 
-  if (!response.ok) throw new Error("Failed to refine SOP");
-  const data = await response.json();
-  return data.text;
+  return response.text;
 };

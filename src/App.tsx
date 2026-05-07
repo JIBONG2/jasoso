@@ -14,6 +14,7 @@ export default function App() {
   const [initialSOP, setInitialSOP] = React.useState("");
   const [chatHistory, setChatHistory] = React.useState<ChatMessage[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   const [drafts, setDrafts] = React.useState<SOPDraft[]>([]);
 
   // Load history on mount
@@ -73,6 +74,7 @@ export default function App() {
     certificates: string;
   }) => {
     setLoading(true);
+    setError(null);
     try {
       const text = await generateInitialSOP(sopType, info);
       const content = text || "";
@@ -81,7 +83,7 @@ export default function App() {
       setStep("REFINEMENT");
     } catch (error) {
       console.error("Failed to generate SOP", error);
-      alert("자기소개서 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      setError("자기소개서 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
@@ -99,6 +101,21 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
+      {/* Error Toast */}
+      <AnimatePresence>
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-50 text-red-600 px-4 py-2 rounded-full border border-red-100 shadow-sm z-[100] flex items-center gap-2"
+          >
+            <span className="text-sm font-medium">{error}</span>
+            <button onClick={() => setError(null)} className="hover:opacity-70 text-lg">×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header (Only on first 2 steps) */}
       {step !== "REFINEMENT" && (
         <header className="px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-50">
